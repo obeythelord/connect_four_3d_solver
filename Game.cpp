@@ -6,7 +6,7 @@
 
 #include "Game.h"
 
-
+#include <iostream>
 
 int Game::iterationCount = 0;
 
@@ -341,6 +341,7 @@ int Game::computeGameValue(int *initialBoard) {
 
 int Game::negaMax(BoardState &position, bool lowerBound, bool upperBound) {
     iterationCount++;
+    // if (iterationCount % 1000000 == 0) std::cout << "iteration " << iterationCount << std::endl;
 
 #ifdef FULL_DEBUG_OUTPUT
 #ifdef PRINT_BB
