@@ -17,7 +17,7 @@
 //#define USE_ENABLED_MOVE_FOR_SCORES
 #endif
 
-//#define NO_SYMMETRY_USAGE
+#define NO_SYMMETRY_USAGE
 
 #include <cstdint>
 #include <array>
