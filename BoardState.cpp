@@ -3,6 +3,7 @@
 //
 
 #include "BoardState.h"
+#include <iostream>
 
 WinMasks BoardState::openingUpdateMasks[64] = {};
 uint16_t BoardState::symmetryLookupTables[65536][7] = {};
@@ -479,6 +480,10 @@ MoveOrdering BoardState::getMoves() {
 #endif
 #endif
 
+    for (int i = 0; i < moves.moveCount; ++i) {
+        std::cout << "move " << moves.moves[i].move << std::endl;
+        std::cout << "score " << moves.moves[i].score << std::endl;
+    }
     return moves;
 }
 
