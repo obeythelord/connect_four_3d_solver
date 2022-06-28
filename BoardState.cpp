@@ -96,7 +96,7 @@ BoardState::BoardState(int *initialBoard) {
         else {
             moves.moves[i].valid = false;
         }
-        // std::cout << moves.moves[i].score << std::endl;
+        std::cout << moves.moves[i].score << std::endl;
     }
     moves.moveCount = 16;
 
@@ -197,6 +197,7 @@ void BoardState::MakeMove(Move move) {
                 moves.moves[moves.moveCount].score = moveOrderingHistory[movesPlayedCount - 1].moves[moves.moveCount].score;
             }
             moves.moves[moves.moveCount].valid = true;
+            std::cout << moves.moves[moves.moveCount].score << std::endl;
         }
         else {
             moves.moves[moves.moveCount].valid = false;
@@ -562,6 +563,7 @@ MoveOrdering BoardState::getMoves() {
         }
         //Otherwise, play the one move that can block the opponent's win
         moves.moves[0].move = oppPlayableOpenings;
+        moves.moves[0].updatedPlayerOpenings = activePlayerOpeningsHistory[movesPlayedCount];
         moves.moveCount = 1;
     }
     else {
@@ -734,9 +736,10 @@ MoveOrdering BoardState::getMoves() {
 #endif
 #endif
 
+    std::cout << "Moves " << std::endl;
     for (int i = 0; i < moves.moveCount; ++i) {
-        // std::cout << "move " << moves.moves[i].move << std::endl;
-        // std::cout << "score " << moves.moves[i].score << std::endl;
+        std::cout << "move " << moves.moves[i].move << std::endl;
+        std::cout << "score " << moves.moves[i].score << std::endl;
     }
     // std::cout << "returning" << std::endl;
     return moves;
