@@ -84,10 +84,10 @@ BoardState::BoardState(int *initialBoard) {
     // Assume that we already checked that we cannot win immediately beforehand
 
     //get the list of all moves and whether they are valid or not
-    // A move is invalid if it will never be played in this game.
+    // A move is invalid if the column is full
+    std::cout << "initial Moves" << std::endl;
     for (uint8_t i = 0; i < 16; ++i) {
         uint64_t currMove = playableMovesHistory[movesPlayedCount] & (uint64_t(0b0000000000000001000000000000000100000000000000010000000000000001) << i);
-        moves.moves[i].score = 0;
         if ((currMove != 0)) {
             moves.moves[i].move = currMove;
             moves.moves[i].valid = true;
@@ -96,6 +96,8 @@ BoardState::BoardState(int *initialBoard) {
         else {
             moves.moves[i].valid = false;
         }
+        
+        std::cout << moves.moves[i].move << std::endl;
         std::cout << moves.moves[i].score << std::endl;
     }
     moves.moveCount = 16;
@@ -184,32 +186,34 @@ void BoardState::MakeMove(Move move) {
 
     MoveOrdering moves = {};
 
+    moves.moveCount = 16;
+
     for (uint8_t i = 0; i < 16; ++i) {
         uint64_t currMove = playableMovesHistory[movesPlayedCount] & (uint64_t(0b0000000000000001000000000000000100000000000000010000000000000001) << i);
         if ((currMove != 0)) {
-            moves.moves[moves.moveCount].move = currMove;
-            moves.moves[moves.moveCount].score = 0;
-            move.updatedPlayerOpenings = activePlayerOpeningsHistory[movesPlayedCount];
+            moves.moves[i].move = currMove;
             if (affected[getIDFromPoint(move.move)][getIDFromPoint(currMove)]) {
-                Score(moves.moves[moves.moveCount]);
+                Score(moves.moves[i]);
             }
             else {
-                moves.moves[moves.moveCount].score = moveOrderingHistory[movesPlayedCount - 1].moves[moves.moveCount].score;
+                moves.moves[i].score = moveOrderingHistory[movesPlayedCount - 1].moves[i].score;
+                moves.moves[i].updatedPlayerOpenings = activePlayerOpeningsHistory[movesPlayedCount];
+                
             }
-            moves.moves[moves.moveCount].valid = true;
-            std::cout << moves.moves[moves.moveCount].score << std::endl;
+            moves.moves[i].valid = true;
+            std::cout << moves.moves[i].score << std::endl;
         }
         else {
-            moves.moves[moves.moveCount].valid = false;
+            moves.moves[i].valid = false;
         }
-
-        moves.moveCount++;  
     }
 
     moveOrderingHistory[movesPlayedCount] = moves;
 }
 
 void BoardState::Score(Move &move) {
+    move.updatedPlayerOpenings = activePlayerOpeningsHistory[movesPlayedCount];
+    move.score = 0;
     unsigned currID = getIDFromPoint(move.move);
     for (int j = 0; j < openingUpdateMasks[currID].maskCount; j++) {
         // First, check whether the opponent already has at least one stone of the line
@@ -549,200 +553,200 @@ void BoardState::initialize() {
 }
 
 MoveOrdering BoardState::getMoves() {
-    MoveOrdering moves = {};
-    // Assume that we already checked that we cannot win immediately beforehand
+//     MoveOrdering moves = {};
+//     // Assume that we already checked that we cannot win immediately beforehand
 
-    // Compute opponents openings to see whether we have to make a certain move in order to block opponent's win
-    uint64_t oppOpenings = opponentOpeningsHistory[movesPlayedCount];
-    uint64_t oppPlayableOpenings = oppOpenings & playableMovesHistory[movesPlayedCount];
-    if (oppPlayableOpenings != 0) {
-        if ((((oppPlayableOpenings - 1) & oppPlayableOpenings) != 0) || (((oppPlayableOpenings << 16) & oppOpenings) != 0)) {
-            // In this case the opponent either has more than one playable opening or the only opening is below another opening
-            // In either case we are guaranteed to lose, so we return no moves, which will cause a loss in the Game loop
-            return moves;
-        }
-        //Otherwise, play the one move that can block the opponent's win
-        moves.moves[0].move = oppPlayableOpenings;
-        moves.moves[0].updatedPlayerOpenings = activePlayerOpeningsHistory[movesPlayedCount];
-        moves.moveCount = 1;
-    }
-    else {
-        for (uint8_t i = 0; i < 16; ++i) {
-            if (moveOrderingHistory[movesPlayedCount].moves[i].valid && ((moveOrderingHistory[movesPlayedCount].moves[i].move << 16) & oppOpenings) == 0) {
-                // moves.moves[moves.moveCount] = moveOrderingHistory[movesPlayedCount].moves[i];
-                moves.moves[moves.moveCount].move = moveOrderingHistory[movesPlayedCount].moves[i].move;
-                moves.moves[moves.moveCount].score = moveOrderingHistory[movesPlayedCount].moves[i].score;
-                moves.moves[moves.moveCount].updatedPlayerOpenings = activePlayerOpeningsHistory[movesPlayedCount];
-                moves.moves[moves.moveCount].valid = true;
-                moves.moveCount++;
-            }
-        }
-        // for (uint8_t i = 0; i < 16; ++i) {
-        //     uint64_t currMove = playableMovesHistory[movesPlayedCount] & (uint64_t(0b0000000000000001000000000000000100000000000000010000000000000001) << i);
-        //     if ((currMove != 0) && ((currMove << 16) & oppOpenings) == 0) {
-        //         moves.moves[moves.moveCount].move = currMove;
-        //         moves.moves[moves.moveCount].score = movesPlayedCount > 0? moveOrderingHistory[movesPlayedCount - 1].moves[moves.moveCount].score: 0;
-        //         moves.moves[moves.moveCount].valid = true;
-        //     }
-        //     else {
-        //         moves.moves[moves.moveCount].valid = false;
-        //     }
+//     // Compute opponents openings to see whether we have to make a certain move in order to block opponent's win
+//     uint64_t oppOpenings = opponentOpeningsHistory[movesPlayedCount];
+//     uint64_t oppPlayableOpenings = oppOpenings & playableMovesHistory[movesPlayedCount];
+//     if (oppPlayableOpenings != 0) {
+//         if ((((oppPlayableOpenings - 1) & oppPlayableOpenings) != 0) || (((oppPlayableOpenings << 16) & oppOpenings) != 0)) {
+//             // In this case the opponent either has more than one playable opening or the only opening is below another opening
+//             // In either case we are guaranteed to lose, so we return no moves, which will cause a loss in the Game loop
+//             return moves;
+//         }
+//         //Otherwise, play the one move that can block the opponent's win
+//         moves.moves[0].move = oppPlayableOpenings;
+//         moves.moves[0].updatedPlayerOpenings = activePlayerOpeningsHistory[movesPlayedCount];
+//         moves.moveCount = 1;
+//     }
+//     else {
+//         for (uint8_t i = 0; i < 16; ++i) {
+//             if (moveOrderingHistory[movesPlayedCount].moves[i].valid && ((moveOrderingHistory[movesPlayedCount].moves[i].move << 16) & oppOpenings) == 0) {
+//                 // moves.moves[moves.moveCount] = moveOrderingHistory[movesPlayedCount].moves[i];
+//                 moves.moves[moves.moveCount].move = moveOrderingHistory[movesPlayedCount].moves[i].move;
+//                 moves.moves[moves.moveCount].score = moveOrderingHistory[movesPlayedCount].moves[i].score;
+//                 moves.moves[moves.moveCount].updatedPlayerOpenings = activePlayerOpeningsHistory[movesPlayedCount];
+//                 moves.moves[moves.moveCount].valid = true;
+//                 moves.moveCount++;
+//             }
+//         }
+//         // for (uint8_t i = 0; i < 16; ++i) {
+//         //     uint64_t currMove = playableMovesHistory[movesPlayedCount] & (uint64_t(0b0000000000000001000000000000000100000000000000010000000000000001) << i);
+//         //     if ((currMove != 0) && ((currMove << 16) & oppOpenings) == 0) {
+//         //         moves.moves[moves.moveCount].move = currMove;
+//         //         moves.moves[moves.moveCount].score = movesPlayedCount > 0? moveOrderingHistory[movesPlayedCount - 1].moves[moves.moveCount].score: 0;
+//         //         moves.moves[moves.moveCount].valid = true;
+//         //     }
+//         //     else {
+//         //         moves.moves[moves.moveCount].valid = false;
+//         //     }
 
-        //     moves.moveCount++;  
-        // }
-    }
+//         //     moves.moveCount++;  
+//         // }
+//     }
 
-    // for (int i = 0; i < moves.moveCount; i++) {
-    //     if (!moves.moves[i].valid) continue;
+//     // for (int i = 0; i < moves.moveCount; i++) {
+//     //     if (!moves.moves[i].valid) continue;
 
-    //     moves.moves[i].updatedPlayerOpenings = activePlayerOpeningsHistory[movesPlayedCount];
+//     //     moves.moves[i].updatedPlayerOpenings = activePlayerOpeningsHistory[movesPlayedCount];
 
-    //     unsigned currID = getIDFromPoint(moves.moves[i].move);
+//     //     unsigned currID = getIDFromPoint(moves.moves[i].move);
 
-    //     //see if this move was affected by the last move
-    //     if (affected[getIDFromPoint(moveHistory[movesPlayedCount])][currID]) {
-    //         moves.moves[i].score = 0;
-    //         for (int j = 0; j < openingUpdateMasks[currID].maskCount; j++) {
-    //             // First, check whether the opponent already has at least one stone of the line
-    //             if ((opponentBoardHistory[movesPlayedCount] & (openingUpdateMasks[currID].masks[j])) == 0) {
-    //                 moves.moves[i].score += SCORE_WEIGHT_WIN_DIRECTION_POSSIBLE;
-    //                 // Check if there are two other stones on this line already, creating an opening
-    //                 // (note that we cannot have 3 stones there, otherwise this current stone would have won)
-    //                 uint64_t currPotentialOpeningStones = activePlayerBoardHistory[movesPlayedCount] & (openingUpdateMasks[currID].masks[j]);
-    //                 if (((currPotentialOpeningStones - 1) & currPotentialOpeningStones) != 0) {
-    //                     uint64_t createdOpening = currPotentialOpeningStones ^ (openingUpdateMasks[currID].masks[j]);
-    //                     // Check whether the opening is immediately playable and add the corresponding weight
-    //                     // Note that the second check is necessary because playableMoves does not take the current move into account, which might enable the immediate opening move
-    //                     if ((createdOpening & playableMovesHistory[movesPlayedCount]) != 0 || (((moves.moves[i].move) << 16) & createdOpening) != 0) {
-    //                         moves.moves[i].score += SCORE_WEIGHT_PLAYABLE_OPENING_CREATED;
-    //                     }
-    //                     else {
-    //                         moves.moves[i].score += SCORE_WEIGHT_FUTURE_OPENING_CREATED;
-    //                     }
-    //                     // Get the actual opening and add it to the mask
-    //                     moves.moves[i].updatedPlayerOpenings |= createdOpening;
-    //                 }
-    //             }
-    //         }
-    // #ifdef COMPUTE_DETAILED_SCORES
-    //         // Check the value of the current move for the opponent (since we would be blocking it)
-    //         for (int j = 0; j < openingUpdateMasks[currID].maskCount; j++) {
-    //             // First, check whether the active player already has at least one stone of the line
-    //             if ((activePlayerBoardHistory[movesPlayedCount] & (openingUpdateMasks[currID].masks[j])) == 0) {
-    //                 moves.moves[i].score += SCORE_WEIGHT_BLOCKED_WIN_DIRECTION_POSSIBLE;
-    //                 // Check if there are two other stones on this line already, creating an opening
-    //                 // (note that we cannot have 3 stones there, otherwise this current stone would be an opponent's opening and this move would be forced)
-    //                 uint64_t currPotentialOpeningStones = opponentBoardHistory[movesPlayedCount] & (openingUpdateMasks[currID].masks[j]);
-    //                 if (((currPotentialOpeningStones - 1) & currPotentialOpeningStones) != 0) {
-    //                     moves.moves[i].score += SCORE_WEIGHT_BLOCKED_OPENING_CREATED;
-    //                 }
-    //             }
+//     //     //see if this move was affected by the last move
+//     //     if (affected[getIDFromPoint(moveHistory[movesPlayedCount])][currID]) {
+//     //         moves.moves[i].score = 0;
+//     //         for (int j = 0; j < openingUpdateMasks[currID].maskCount; j++) {
+//     //             // First, check whether the opponent already has at least one stone of the line
+//     //             if ((opponentBoardHistory[movesPlayedCount] & (openingUpdateMasks[currID].masks[j])) == 0) {
+//     //                 moves.moves[i].score += SCORE_WEIGHT_WIN_DIRECTION_POSSIBLE;
+//     //                 // Check if there are two other stones on this line already, creating an opening
+//     //                 // (note that we cannot have 3 stones there, otherwise this current stone would have won)
+//     //                 uint64_t currPotentialOpeningStones = activePlayerBoardHistory[movesPlayedCount] & (openingUpdateMasks[currID].masks[j]);
+//     //                 if (((currPotentialOpeningStones - 1) & currPotentialOpeningStones) != 0) {
+//     //                     uint64_t createdOpening = currPotentialOpeningStones ^ (openingUpdateMasks[currID].masks[j]);
+//     //                     // Check whether the opening is immediately playable and add the corresponding weight
+//     //                     // Note that the second check is necessary because playableMoves does not take the current move into account, which might enable the immediate opening move
+//     //                     if ((createdOpening & playableMovesHistory[movesPlayedCount]) != 0 || (((moves.moves[i].move) << 16) & createdOpening) != 0) {
+//     //                         moves.moves[i].score += SCORE_WEIGHT_PLAYABLE_OPENING_CREATED;
+//     //                     }
+//     //                     else {
+//     //                         moves.moves[i].score += SCORE_WEIGHT_FUTURE_OPENING_CREATED;
+//     //                     }
+//     //                     // Get the actual opening and add it to the mask
+//     //                     moves.moves[i].updatedPlayerOpenings |= createdOpening;
+//     //                 }
+//     //             }
+//     //         }
+//     // #ifdef COMPUTE_DETAILED_SCORES
+//     //         // Check the value of the current move for the opponent (since we would be blocking it)
+//     //         for (int j = 0; j < openingUpdateMasks[currID].maskCount; j++) {
+//     //             // First, check whether the active player already has at least one stone of the line
+//     //             if ((activePlayerBoardHistory[movesPlayedCount] & (openingUpdateMasks[currID].masks[j])) == 0) {
+//     //                 moves.moves[i].score += SCORE_WEIGHT_BLOCKED_WIN_DIRECTION_POSSIBLE;
+//     //                 // Check if there are two other stones on this line already, creating an opening
+//     //                 // (note that we cannot have 3 stones there, otherwise this current stone would be an opponent's opening and this move would be forced)
+//     //                 uint64_t currPotentialOpeningStones = opponentBoardHistory[movesPlayedCount] & (openingUpdateMasks[currID].masks[j]);
+//     //                 if (((currPotentialOpeningStones - 1) & currPotentialOpeningStones) != 0) {
+//     //                     moves.moves[i].score += SCORE_WEIGHT_BLOCKED_OPENING_CREATED;
+//     //                 }
+//     //             }
 
-    //         }
-    // #ifdef USE_ENABLED_MOVE_FOR_SCORES
-    //         currID += 16;
-    //         if (currID < 64) {
-    //             // Check the value of the current move for the opponent (since we would be blocking it)
-    //             for (int j = 0; j < openingUpdateMasks[currID].maskCount; j++) {
-    //                 // First, check whether the active player already has at least one stone of the line
-    //                 if ((activePlayerBoardHistory[movesPlayedCount] & (openingUpdateMasks[currID].masks[j])) == 0) {
-    //                     moves.moves[i].score += SCORE_WEIGHT_ABOVE_OPPONENT_WIN_DIRECTION_POSSIBLE;
-    //                     // Check if there are two other stones on this line already, creating an opening
-    //                     // (note that we cannot have 3 stones there, otherwise this current stone would enable an opponent's opening and this move would be prevented)
-    //                     uint64_t currPotentialOpeningStones = opponentBoardHistory[movesPlayedCount] & (openingUpdateMasks[currID].masks[j]);
-    //                     if (((currPotentialOpeningStones - 1) & currPotentialOpeningStones) != 0) {
-    //                         moves.moves[i].score += SCORE_WEIGHT_ABOVE_OPPONENT_OPENING_CREATED;
-    //                     }
-    //                 }
+//     //         }
+//     // #ifdef USE_ENABLED_MOVE_FOR_SCORES
+//     //         currID += 16;
+//     //         if (currID < 64) {
+//     //             // Check the value of the current move for the opponent (since we would be blocking it)
+//     //             for (int j = 0; j < openingUpdateMasks[currID].maskCount; j++) {
+//     //                 // First, check whether the active player already has at least one stone of the line
+//     //                 if ((activePlayerBoardHistory[movesPlayedCount] & (openingUpdateMasks[currID].masks[j])) == 0) {
+//     //                     moves.moves[i].score += SCORE_WEIGHT_ABOVE_OPPONENT_WIN_DIRECTION_POSSIBLE;
+//     //                     // Check if there are two other stones on this line already, creating an opening
+//     //                     // (note that we cannot have 3 stones there, otherwise this current stone would enable an opponent's opening and this move would be prevented)
+//     //                     uint64_t currPotentialOpeningStones = opponentBoardHistory[movesPlayedCount] & (openingUpdateMasks[currID].masks[j]);
+//     //                     if (((currPotentialOpeningStones - 1) & currPotentialOpeningStones) != 0) {
+//     //                         moves.moves[i].score += SCORE_WEIGHT_ABOVE_OPPONENT_OPENING_CREATED;
+//     //                     }
+//     //                 }
 
-    //             }
-    //             for (int j = 0; j < openingUpdateMasks[currID].maskCount; j++) {
-    //                 // First, check whether the opponent already has at least one stone of the line
-    //                 if ((opponentBoardHistory[movesPlayedCount] & (openingUpdateMasks[currID].masks[j])) == 0) {
-    //                     moves.moves[i].score += SCORE_WEIGHT_ABOVE_OWN_WIN_DIRECTION_POSSIBLE;
-    //                     // Check if there are two other stones on this line already, creating an opening
-    //                     uint64_t currPotentialOpeningStones = activePlayerBoardHistory[movesPlayedCount] & (openingUpdateMasks[currID].masks[j]);
-    //                     if (((currPotentialOpeningStones - 1) & currPotentialOpeningStones) != 0) {
-    //                         moves.moves[i].score += SCORE_WEIGHT_ABOVE_OWN_OPENING_CREATED;
-    //                     }
-    //                 }
+//     //             }
+//     //             for (int j = 0; j < openingUpdateMasks[currID].maskCount; j++) {
+//     //                 // First, check whether the opponent already has at least one stone of the line
+//     //                 if ((opponentBoardHistory[movesPlayedCount] & (openingUpdateMasks[currID].masks[j])) == 0) {
+//     //                     moves.moves[i].score += SCORE_WEIGHT_ABOVE_OWN_WIN_DIRECTION_POSSIBLE;
+//     //                     // Check if there are two other stones on this line already, creating an opening
+//     //                     uint64_t currPotentialOpeningStones = activePlayerBoardHistory[movesPlayedCount] & (openingUpdateMasks[currID].masks[j]);
+//     //                     if (((currPotentialOpeningStones - 1) & currPotentialOpeningStones) != 0) {
+//     //                         moves.moves[i].score += SCORE_WEIGHT_ABOVE_OWN_OPENING_CREATED;
+//     //                     }
+//     //                 }
 
-    //             }
-    //         }
-    // #endif
-    // #endif
-    //         // std::cout << "loop 1 end " << i << std::endl;
-    //     }
-    // }
+//     //             }
+//     //         }
+//     // #endif
+//     // #endif
+//     //         // std::cout << "loop 1 end " << i << std::endl;
+//     //     }
+//     // }
 
-    // std::cout << "scored moves" << std::endl;
-#ifndef NO_MOVE_SORTING
-#ifdef USE_SORTING_NETWORK
-    // Sort the moves using Green's sorting network for 16 values
-    for (unsigned i = 0; i < 16; i += 2) {
-        conditionalSwap(moves, i, i + 1);
-    }
-    for (unsigned i = 0; i < 16; i += 4) {
-        conditionalSwap(moves, i, i + 2);
-        conditionalSwap(moves, i + 1, i + 3);
-    }
-    for (unsigned j = 0; j < 2; j++) {
-        for (unsigned i = j * 8; i < j * 8 + 4; i++) {
-            conditionalSwap(moves, i, i + 4);
-        }
-    }
-    for (unsigned i = 0; i < 8; i++) {
-        conditionalSwap(moves, i, i + 8);
-    }
-    conditionalSwap(moves, 5, 10);
-    conditionalSwap(moves, 6, 9);
-    conditionalSwap(moves, 1, 2);
-    conditionalSwap(moves, 3, 12);
-    conditionalSwap(moves, 4, 8);
-    conditionalSwap(moves, 7, 11);
-    conditionalSwap(moves, 13, 14);
-    conditionalSwap(moves, 2, 8);
-    conditionalSwap(moves, 7, 13);
-    conditionalSwap(moves, 11, 14);
-    conditionalSwap(moves, 1, 4);
-    conditionalSwap(moves, 2, 4);
-    conditionalSwap(moves, 11, 13);
-    conditionalSwap(moves, 5, 6);
-    conditionalSwap(moves, 9, 10);
-    conditionalSwap(moves, 3, 8);
-    conditionalSwap(moves, 7, 12);
-    conditionalSwap(moves, 3, 5);
-    conditionalSwap(moves, 6, 8);
-    conditionalSwap(moves, 7, 9);
-    conditionalSwap(moves, 10, 12);
-    for (unsigned i = 3; i < 13; i += 2) {
-        conditionalSwap(moves, i, i + 1);
-    }
-    conditionalSwap(moves, 6, 7);
-    conditionalSwap(moves, 8, 9);
+//     // std::cout << "scored moves" << std::endl;
+// #ifndef NO_MOVE_SORTING
+// #ifdef USE_SORTING_NETWORK
+//     // Sort the moves using Green's sorting network for 16 values
+//     for (unsigned i = 0; i < 16; i += 2) {
+//         conditionalSwap(moves, i, i + 1);
+//     }
+//     for (unsigned i = 0; i < 16; i += 4) {
+//         conditionalSwap(moves, i, i + 2);
+//         conditionalSwap(moves, i + 1, i + 3);
+//     }
+//     for (unsigned j = 0; j < 2; j++) {
+//         for (unsigned i = j * 8; i < j * 8 + 4; i++) {
+//             conditionalSwap(moves, i, i + 4);
+//         }
+//     }
+//     for (unsigned i = 0; i < 8; i++) {
+//         conditionalSwap(moves, i, i + 8);
+//     }
+//     conditionalSwap(moves, 5, 10);
+//     conditionalSwap(moves, 6, 9);
+//     conditionalSwap(moves, 1, 2);
+//     conditionalSwap(moves, 3, 12);
+//     conditionalSwap(moves, 4, 8);
+//     conditionalSwap(moves, 7, 11);
+//     conditionalSwap(moves, 13, 14);
+//     conditionalSwap(moves, 2, 8);
+//     conditionalSwap(moves, 7, 13);
+//     conditionalSwap(moves, 11, 14);
+//     conditionalSwap(moves, 1, 4);
+//     conditionalSwap(moves, 2, 4);
+//     conditionalSwap(moves, 11, 13);
+//     conditionalSwap(moves, 5, 6);
+//     conditionalSwap(moves, 9, 10);
+//     conditionalSwap(moves, 3, 8);
+//     conditionalSwap(moves, 7, 12);
+//     conditionalSwap(moves, 3, 5);
+//     conditionalSwap(moves, 6, 8);
+//     conditionalSwap(moves, 7, 9);
+//     conditionalSwap(moves, 10, 12);
+//     for (unsigned i = 3; i < 13; i += 2) {
+//         conditionalSwap(moves, i, i + 1);
+//     }
+//     conditionalSwap(moves, 6, 7);
+//     conditionalSwap(moves, 8, 9);
 
-#else
+// #else
 
-    // std::cout << "sorting" << std::endl;
-    // Sort the moves via insertion sort
-    for (int i = 0; i < moves.moveCount; i++) {
-        Move tmpMove = moves.moves[i];
-        int j = i;
-        for (; j > 0 && moves.moves[j - 1].score < tmpMove.score; j--) {
-            moves.moves[j] = moves.moves[j - 1];
-        }
-        moves.moves[j] = tmpMove;
-    }
-#endif
-#endif
+//     // std::cout << "sorting" << std::endl;
+//     // Sort the moves via insertion sort
+//     for (int i = 0; i < moves.moveCount; i++) {
+//         Move tmpMove = moves.moves[i];
+//         int j = i;
+//         for (; j > 0 && moves.moves[j - 1].score < tmpMove.score; j--) {
+//             moves.moves[j] = moves.moves[j - 1];
+//         }
+//         moves.moves[j] = tmpMove;
+//     }
+// #endif
+// #endif
 
-    std::cout << "Moves " << std::endl;
-    for (int i = 0; i < moves.moveCount; ++i) {
-        std::cout << "move " << moves.moves[i].move << std::endl;
-        std::cout << "score " << moves.moves[i].score << std::endl;
-    }
-    // std::cout << "returning" << std::endl;
-    return moves;
+//     std::cout << "Moves " << std::endl;
+//     for (int i = 0; i < moves.moveCount; ++i) {
+//         std::cout << "move " << moves.moves[i].move << std::endl;
+//         std::cout << "score " << moves.moves[i].score << std::endl;
+//     }
+//     // std::cout << "returning" << std::endl;
+//     return moves;
 }
 
 //TODO include symmetry here, also save the key upon first computation and always return the result afterwards
