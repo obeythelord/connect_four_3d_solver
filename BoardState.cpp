@@ -3,7 +3,7 @@
 //
 
 #include "BoardState.h"
-// #include <iostream>
+#include <iostream>
 // #include<bitset>
 
 WinMasks BoardState::openingUpdateMasks[64] = {};
@@ -555,7 +555,12 @@ MoveOrdering BoardState::getMoves() {
     }
 #endif
 #endif
-
+    
+    std::cout << "Moves " << std::endl;
+    for (int i = 0; i < moves.moveCount; ++i) {
+        std::cout << "move " << moves.moves[i].move << std::endl;
+        std::cout << "score " << moves.moves[i].score << std::endl;
+    }
     // std::cout << "returning" << std::endl;
     return moves;
 }
